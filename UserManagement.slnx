@@ -1,0 +1,16 @@
+<Solution>
+  <Folder Name="/Solution Items/">
+    <File Path=".editorconfig" />
+    <File Path=".gitignore" />
+    <File Path="Directory.Build.props" />
+    <File Path="README.md" />
+  </Folder>
+  <Folder Name="/Tests/">
+    <Project Path="UserManagement.Data.Tests/UserManagement.Data.Tests.csproj" />
+    <Project Path="UserManagement.Services.Tests/UserManagement.Services.Tests.csproj" />
+    <Project Path="UserManagement.Web.Tests/UserManagement.Web.Tests.csproj" />
+  </Folder>
+  <Project Path="UserManagement.Data/UserManagement.Data.csproj" />
+  <Project Path="UserManagement.Services/UserManagement.Services.csproj" />
+  <Project Path="UserManagement.Web/UserManagement.Web.csproj" />
+</Solution>
