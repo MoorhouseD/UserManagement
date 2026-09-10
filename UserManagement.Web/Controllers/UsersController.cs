@@ -1,7 +1,7 @@
 ﻿using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using UserManagement.Data.Entities;
+using UserManagement.Data.Models;
 using UserManagement.Services.Interfaces;
 using UserManagement.Web.Models;
 
@@ -15,7 +15,7 @@ public class UsersController(IUserService userService) : Controller
     [HttpGet("List")]
     public async Task<ViewResult> List(bool? isActive = null, CancellationToken cancellationToken = default)
     {
-        IEnumerable<User> users;
+        IEnumerable<UserDataModel> users;
 
         users = await _userService.GetUsersAsync(isActive, cancellationToken);
 

@@ -1,15 +1,16 @@
-using System.Linq;
+using System.Collections.Generic;
+using System;
 using System.Threading;
 using System.Threading.Tasks;
-using UserManagement.Data;
-using UserManagement.Data.Entities;
+using UserManagement.Data.Models;
+using UserManagement.Data.Services;
 using UserManagement.Services.Implementations;
 
 namespace UserManagement.Services.Tests;
 
 public class UserServiceTests
 {
-    private readonly Mock<IDataContext> _dataContext = new();
+    private readonly Mock<IUserManagementDataService> _dataContext = new();
 
     private UserService CreateUserService() => new(_dataContext.Object);
 
@@ -27,22 +28,16 @@ public class UserServiceTests
         result.Should().BeEquivalentTo(users);
     }
 
-    private IQueryable<User> SetupUsers(string forename = "Johnny", string surname = "User", string email = "juser@example.com", bool isActive = true)
+    private IReadOnlyList<UserDataModel> SetupUsers(string forename = "Johnny", string surname = "User", string email = "juser@example.com", bool isActive = true)
     {
         var users = new[]
         {
-            new User
-            {
-                Forename = forename,
-                Surname = surname,
-                Email = email,
-                IsActive = isActive
-            }
-        }.AsQueryable();
+            new UserDataModel(1, forename, surname, new DateOnly(2000, 1, 2), email, isActive)
+        };
 
         _dataContext
-            .Setup(s => s.GetAll<User>())
-            .Returns(users);
+            .Setup(s => s.GetUsersAsync(null, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(users);
 
         return users;
     }

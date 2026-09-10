@@ -1,7 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using UserManagement.Data.Entities;
+using UserManagement.Data.Models;
 using UserManagement.Services.Interfaces;
 using UserManagement.Web.Models;
 using UserManagement.Web.Controllers;
@@ -61,27 +61,13 @@ public class UserControllerTests
     }
 
 
-    private static IEnumerable<User> CreateUsers(string forename = "Johnny", string surname = "User", string email = "juser@example.com", DateOnly? dateOfBirth = null, bool isActive = true)
+    private static IEnumerable<UserDataModel> CreateUsers(string forename = "Johnny", string surname = "User", string email = "juser@example.com", DateOnly? dateOfBirth = null, bool isActive = true)
     {
         var users = new[]
         {
-            new User
-            {
-                Forename = forename,
-                Surname = surname,
-                Email = email,
-                DateOfBirth = dateOfBirth ?? new DateOnly(2000, 1, 2),
-                IsActive = isActive
-            },
+            new UserDataModel(1, forename, surname, dateOfBirth ?? new DateOnly(2000, 1, 2), email, isActive),
             //Inverse of the first user to test filtering
-            new User
-            {
-                Forename = surname,
-                Surname = forename,
-                Email = email,
-                DateOfBirth = dateOfBirth ?? new DateOnly(2000, 2, 1),
-                IsActive = !isActive
-            }
+            new UserDataModel(2, surname, forename, dateOfBirth ?? new DateOnly(2000, 2, 1), email, !isActive)
         };
 
         return users;

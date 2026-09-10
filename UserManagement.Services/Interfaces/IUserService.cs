@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using UserManagement.Data.Entities;
+using UserManagement.Data.Models;
 
 namespace UserManagement.Services.Interfaces;
 
@@ -13,5 +13,5 @@ public interface IUserService
     /// <param name="isActive"></param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    Task<IEnumerable<User>> GetUsersAsync(bool? isActive, CancellationToken cancellationToken = default);
+    Task<IEnumerable<UserDataModel>> GetUsersAsync(bool? isActive, CancellationToken cancellationToken = default);
 }
