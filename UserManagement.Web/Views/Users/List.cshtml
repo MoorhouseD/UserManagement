@@ -1,4 +1,4 @@
-﻿@model UserManagement.Web.Models.Users.UserListViewModel
+﻿@model UserManagement.Web.Models.UserListViewModel
 
 <h2>User List</h2>
 
@@ -54,10 +54,16 @@
 
 <div>
     <div class="btn-group" role="group">
-        <a asp-action="List" class="btn btn-default">Show All</a>
-        <a asp-action="List" asp-route-isActive="true" class="btn btn-default">Active Only</a>
-        <a asp-action="List" asp-route-isActive="false" class="btn btn-default">Inactive Only</a>
-    </div>
+          <a asp-action="List"
+              class="btn @(Model.IsActive is null ? "btn-primary" : "btn-outline-primary")"
+              aria-pressed="@(Model.IsActive is null)">Show All</a>
+        <a asp-action="List" asp-route-isActive="true"
+              class="btn @(Model.IsActive is true ? "btn-primary" : "btn-outline-primary")"
+              aria-pressed="@(Model.IsActive is true)">Active only</a>
+          <a asp-action="List" asp-route-isActive="false"
+              class="btn @(Model.IsActive is false ? "btn-primary" : "btn-outline-primary")"
+              aria-pressed="@(Model.IsActive is false)">Inactive only</a>
+     </div>
 
     <a href="#" class="btn btn-primary float-end">
         Add User

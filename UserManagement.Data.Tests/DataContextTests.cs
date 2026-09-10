@@ -1,11 +1,13 @@
+using System;
 using System.Linq;
-using FluentAssertions;
-using UserManagement.Models;
+using UserManagement.Data.Entities;
 
 namespace UserManagement.Data.Tests;
 
 public class DataContextTests
 {
+    private static DataContext CreateContext() => new();
+
     [Fact]
     public void GetAll_WhenNewEntityAdded_MustIncludeNewEntity()
     {
@@ -44,5 +46,28 @@ public class DataContextTests
         result.Should().NotContain(s => s.Email == entity.Email);
     }
 
-    private DataContext CreateContext() => new();
+    [Fact]
+    public void GetAll_WhenNewEntityAdded_HasAllFieldsPopulated()
+    {
+        // Arrange: Initializes objects and sets the value of the data that is passed to the method under test.
+        var context = CreateContext();
+
+        var entity = new User
+        {
+            Forename = "John",
+            Surname = "Smith",
+            DateOfBirth = new DateOnly(1990, 1, 1),
+            Email = "john.smith@email.com",
+            IsActive = true
+        };
+
+        context.Create(entity);
+
+        // Act:
+        var result = context.GetAll<User>();
+
+        // Assert
+        result.Should().Contain(s => s.Email == entity.Email)
+            .Which.Should().BeEquivalentTo(entity);
+    }
 }

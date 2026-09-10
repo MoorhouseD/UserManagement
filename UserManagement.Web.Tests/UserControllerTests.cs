@@ -1,29 +1,67 @@
-using UserManagement.Models;
-using UserManagement.Services.Domain.Interfaces;
-using UserManagement.Web.Models.Users;
-using UserManagement.WebMS.Controllers;
+using System;
+using System.Threading;
+using System.Threading.Tasks;
+using UserManagement.Data.Entities;
+using UserManagement.Services.Interfaces;
+using UserManagement.Web.Models;
+using UserManagement.Web.Controllers;
+using System.Linq;
+using System.Collections.Generic;
 
-namespace UserManagement.Data.Tests;
+namespace UserManagement.Web.Tests;
 
 public class UserControllerTests
 {
-    [Fact]
-    public void List_WhenServiceReturnsUsers_ModelMustContainUsers()
+    private readonly Mock<IUserService> _userService = new();
+    private readonly UsersController _controller;
+
+    public UserControllerTests()
     {
-        // Arrange: Initializes objects and sets the value of the data that is passed to the method under test.
-        var controller = CreateController();
-        var users = SetupUsers();
-
-        // Act: Invokes the method under test with the arranged parameters.
-        var result = controller.List();
-
-        // Assert: Verifies that the action of the method under test behaves as expected.
-        result.Model
-            .Should().BeOfType<UserListViewModel>()
-            .Which.Items.Should().BeEquivalentTo(users);
+        _controller = new UsersController(_userService.Object);
     }
 
-    private User[] SetupUsers(string forename = "Johnny", string surname = "User", string email = "juser@example.com", bool isActive = true)
+    [Fact]
+    public async Task List_WhenServiceReturnsUsers_ModelMustContainUsers()
+    {
+        // Arrange: Initializes objects and sets the value of the data that is passed to the method under test.
+        var users = CreateUsers();
+
+        _userService
+            .Setup(s => s.GetUsersAsync(null, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(users);
+
+        // Act: Invokes the method under test with the arranged parameters.
+        var result = await _controller.List(cancellationToken: CancellationToken.None);
+
+        // Assert: Verifies that the action of the method under test behaves as expected.
+        var model = result.Model.Should().BeOfType<UserListViewModel>().Subject;
+        model.IsActive.Should().BeNull();
+        model.Items.Should().BeEquivalentTo(users);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task List_WhenFilterProvided_ReturnsOnlyRequestedState(bool isActive)
+    {
+        var users = CreateUsers("Test", "User", "test@example.com",
+            new DateOnly(1990, 1, 1), isActive);
+
+        var expectedUsers = users.Where(x => x.IsActive == isActive);
+
+        _userService
+            .Setup(s => s.GetUsersAsync(isActive, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(expectedUsers);
+
+        var result = await _controller.List(isActive, CancellationToken.None);
+
+        var model = result.Model.Should().BeOfType<UserListViewModel>().Subject;
+        model.IsActive.Should().Be(isActive);
+        model.Items.Should().OnlyContain(x => x.IsActive == isActive);
+    }
+
+
+    private static IEnumerable<User> CreateUsers(string forename = "Johnny", string surname = "User", string email = "juser@example.com", DateOnly? dateOfBirth = null, bool isActive = true)
     {
         var users = new[]
         {
@@ -32,17 +70,20 @@ public class UserControllerTests
                 Forename = forename,
                 Surname = surname,
                 Email = email,
+                DateOfBirth = dateOfBirth ?? new DateOnly(2000, 1, 2),
                 IsActive = isActive
+            },
+            //Inverse of the first user to test filtering
+            new User
+            {
+                Forename = surname,
+                Surname = forename,
+                Email = email,
+                DateOfBirth = dateOfBirth ?? new DateOnly(2000, 2, 1),
+                IsActive = !isActive
             }
         };
 
-        _userService
-            .Setup(s => s.GetAll())
-            .Returns(users);
-
         return users;
     }
-
-    private readonly Mock<IUserService> _userService = new();
-    private UsersController CreateController() => new(_userService.Object);
 }

@@ -1,23 +1,30 @@
 using System.Linq;
-using UserManagement.Models;
-using UserManagement.Services.Domain.Implementations;
+using System.Threading;
+using System.Threading.Tasks;
+using UserManagement.Data;
+using UserManagement.Data.Entities;
+using UserManagement.Services.Implementations;
 
-namespace UserManagement.Data.Tests;
+namespace UserManagement.Services.Tests;
 
 public class UserServiceTests
 {
+    private readonly Mock<IDataContext> _dataContext = new();
+
+    private UserService CreateUserService() => new(_dataContext.Object);
+
     [Fact]
-    public void GetAll_WhenContextReturnsEntities_MustReturnSameEntities()
+    public async Task GetAll_WhenContextReturnsEntities_MustReturnSameEntities()
     {
         // Arrange: Initializes objects and sets the value of the data that is passed to the method under test.
-        var service = CreateService();
+        var service = CreateUserService();
         var users = SetupUsers();
 
         // Act: Invokes the method under test with the arranged parameters.
-        var result = service.GetAll();
+        var result = await service.GetUsersAsync(null, CancellationToken.None);
 
         // Assert: Verifies that the action of the method under test behaves as expected.
-        result.Should().BeSameAs(users);
+        result.Should().BeEquivalentTo(users);
     }
 
     private IQueryable<User> SetupUsers(string forename = "Johnny", string surname = "User", string email = "juser@example.com", bool isActive = true)
@@ -39,7 +46,4 @@ public class UserServiceTests
 
         return users;
     }
-
-    private readonly Mock<IDataContext> _dataContext = new();
-    private UserService CreateService() => new(_dataContext.Object);
 }

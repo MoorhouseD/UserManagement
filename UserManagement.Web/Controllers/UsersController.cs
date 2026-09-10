@@ -1,42 +1,37 @@
 ﻿using System.Linq;
-using UserManagement.Models;
-using UserManagement.Services.Domain.Interfaces;
-using UserManagement.Web.Models.Users;
+using System.Threading;
+using System.Threading.Tasks;
+using UserManagement.Data.Entities;
+using UserManagement.Services.Interfaces;
+using UserManagement.Web.Models;
 
-namespace UserManagement.WebMS.Controllers;
+namespace UserManagement.Web.Controllers;
 
 [Route("users")]
-public class UsersController : Controller
+public class UsersController(IUserService userService) : Controller
 {
-    private readonly IUserService _userService;
-    public UsersController(IUserService userService) => _userService = userService;
+    private readonly IUserService _userService = userService;
 
     [HttpGet("List")]
-    public ViewResult List(bool? isActive = null)
+    public async Task<ViewResult> List(bool? isActive = null, CancellationToken cancellationToken = default)
     {
         IEnumerable<User> users;
 
-        if (isActive.HasValue)
-        {
-            users = _userService.FilterByActive(isActive.Value);
-        }
-        else
-        {
-            users = _userService.GetAll();
-        }
+        users = await _userService.GetUsersAsync(isActive, cancellationToken);
 
-        var items = users.Select(p => new UserListItemViewModel
-        {
-            Id = p.Id,
-            Forename = p.Forename,
-            Surname = p.Surname,
-            Email = p.Email,
-            IsActive = p.IsActive
-        });
+        var items = users.Select(p => new UserListItemViewModel(
+            Id: p.Id,
+            Forename: p.Forename,
+            Surname: p.Surname,
+            Email: p.Email,
+            DateOfBirth: p.DateOfBirth,
+            IsActive: p.IsActive
+        ));
 
         var model = new UserListViewModel
         {
-            Items = items.ToList()
+            Items = [.. items],
+            IsActive = isActive
         };
 
         return View(model);

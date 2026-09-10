@@ -1,25 +1,32 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using UserManagement.Data;
-using UserManagement.Models;
-using UserManagement.Services.Domain.Interfaces;
+using UserManagement.Data.Entities;
+using UserManagement.Services.Interfaces;
 
-namespace UserManagement.Services.Domain.Implementations;
+namespace UserManagement.Services.Implementations;
 
-public class UserService : IUserService
+public class UserService(IDataContext dataAccess) : IUserService
 {
-    private readonly IDataContext _dataAccess;
-    public UserService(IDataContext dataAccess) => _dataAccess = dataAccess;
+    private readonly IDataContext _dataAccess = dataAccess;
 
     /// <summary>
     /// Return users by active state
     /// </summary>
     /// <param name="isActive"></param>
+    /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    public IEnumerable<User> FilterByActive(bool isActive)
+    public async Task<IEnumerable<User>> GetUsersAsync(bool? isActive, CancellationToken cancellationToken = default)
     {
-        return _dataAccess.GetAll<User>().Where(p => p.IsActive == isActive);
-    }
+        var userQuery = _dataAccess.GetAll<User>();
 
-    public IEnumerable<User> GetAll() => _dataAccess.GetAll<User>();
+        if (isActive.HasValue)
+        {
+            userQuery = userQuery.Where(p => p.IsActive == isActive.Value);
+        }
+
+        return userQuery.ToList();
+    }
 }
