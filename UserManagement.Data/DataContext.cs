@@ -1,16 +1,17 @@
 ﻿using System;
-using System.Linq;
 using Microsoft.EntityFrameworkCore;
 using UserManagement.Data.Entities;
 
 namespace UserManagement.Data;
 
-public class DataContext : DbContext, IDataContext
+public class DataContext : DbContext
 {
-    public DataContext() => Database.EnsureCreated();
+    public DataContext(DbContextOptions<DataContext> options)
+        : base(options)
+    {
+    }
 
-    protected override void OnConfiguring(DbContextOptionsBuilder options)
-        => options.UseInMemoryDatabase("UserManagement.Data.DataContext");
+    public DbSet<User> Users => Set<User>();
 
     protected override void OnModelCreating(ModelBuilder model)
     {
@@ -32,41 +33,5 @@ public class DataContext : DbContext, IDataContext
             new User { Id = 10, Forename = "Johnny", Surname = "Blaze", DateOfBirth = new DateOnly(1990, 11, 8), Email = "jblaze@example.com", NormalizedEmail = "JBLAZE@EXAMPLE.COM", IsActive = true },
             new User { Id = 11, Forename = "Robin", Surname = "Feld", DateOfBirth = new DateOnly(1983, 7, 14), Email = "rfeld@example.com", NormalizedEmail = "RFELD@EXAMPLE.COM", IsActive = true },
         ]);
-    }
-
-    public DbSet<User>? Users { get; set; }
-
-    public IQueryable<TEntity> GetAll<TEntity>() where TEntity : class
-        => base.Set<TEntity>();
-
-    public void Create<TEntity>(TEntity entity) where TEntity : class
-    {
-        Normalize(entity);
-        base.Add(entity);
-        SaveChanges();
-    }
-
-    public new void Update<TEntity>(TEntity entity) where TEntity : class
-    {
-        Normalize(entity);
-        base.Update(entity);
-        SaveChanges();
-    }
-
-    public void Delete<TEntity>(TEntity entity) where TEntity : class
-    {
-        base.Remove(entity);
-        SaveChanges();
-    }
-
-    private static void Normalize<TEntity>(TEntity entity) where TEntity : class
-    {
-        if (entity is User user)
-        {
-            user.Forename = user.Forename.Trim();
-            user.Surname = user.Surname.Trim();
-            user.Email = user.Email.Trim();
-            user.NormalizedEmail = user.Email.ToUpperInvariant();
-        }
     }
 }

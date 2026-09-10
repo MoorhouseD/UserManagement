@@ -1,55 +1,62 @@
 using System;
 using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 using UserManagement.Data.Entities;
+using UserManagement.Data.Services;
 
 namespace UserManagement.Data.Tests;
 
 public class DataContextTests
 {
-    private static DataContext CreateContext() => new();
+    private static DataContext CreateContext(string? databaseName = null)
+    {
+        var context = new DataContext(new DbContextOptionsBuilder<DataContext>()
+            .UseInMemoryDatabase(databaseName ?? Guid.NewGuid().ToString())
+            .Options);
+
+        context.Database.EnsureCreated();
+        return context;
+    }
 
     [Fact]
-    public void GetAll_WhenNewEntityAdded_MustIncludeNewEntity()
+    public async Task GetUsersAsync_WhenNewEntityAdded_MustIncludeNewEntity()
     {
-        // Arrange: Initializes objects and sets the value of the data that is passed to the method under test.
         var context = CreateContext();
-
         var entity = new User
         {
             Forename = "Brand New",
             Surname = "User",
-            Email = "brandnewuser@example.com"
+            DateOfBirth = new DateOnly(1990, 1, 1),
+            Email = "brandnewuser@example.com",
+            NormalizedEmail = "BRANDNEWUSER@EXAMPLE.COM",
+            IsActive = true
         };
-        context.Create(entity);
 
-        // Act: Invokes the method under test with the arranged parameters.
-        var result = context.GetAll<User>();
+        context.Users.Add(entity);
+        await context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        // Assert: Verifies that the action of the method under test behaves as expected.
-        result
-            .Should().Contain(s => s.Email == entity.Email)
-            .Which.Should().BeEquivalentTo(entity);
+        var result = await new UserManagementDataService(context).GetUsersAsync(null, TestContext.Current.CancellationToken);
+
+        result.Should().Contain(user => user.Email == entity.Email);
     }
 
     [Fact]
-    public void GetAll_WhenDeleted_MustNotIncludeDeletedEntity()
+    public async Task GetUsersAsync_WhenDeleted_MustNotIncludeDeletedEntity()
     {
-        // Arrange: Initializes objects and sets the value of the data that is passed to the method under test.
         var context = CreateContext();
-        var entity = context.GetAll<User>().First();
-        context.Delete(entity);
+        var entity = context.Users.First();
+        context.Users.Remove(entity);
+        await context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        // Act: Invokes the method under test with the arranged parameters.
-        var result = context.GetAll<User>();
+        var result = await new UserManagementDataService(context).GetUsersAsync(null, TestContext.Current.CancellationToken);
 
-        // Assert: Verifies that the action of the method under test behaves as expected.
-        result.Should().NotContain(s => s.Email == entity.Email);
+        result.Should().NotContain(user => user.Email == entity.Email);
     }
 
     [Fact]
-    public void GetAll_WhenNewEntityAdded_HasAllFieldsPopulated()
+    public async Task GetUsersAsync_WhenNewEntityAdded_HasAllFieldsPopulated()
     {
-        // Arrange: Initializes objects and sets the value of the data that is passed to the method under test.
         var context = CreateContext();
 
         var entity = new User
@@ -58,16 +65,57 @@ public class DataContextTests
             Surname = "Smith",
             DateOfBirth = new DateOnly(1990, 1, 1),
             Email = "john.smith@email.com",
+            NormalizedEmail = "JOHN.SMITH@EMAIL.COM",
             IsActive = true
         };
 
-        context.Create(entity);
+        context.Users.Add(entity);
+        await context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        // Act:
-        var result = context.GetAll<User>();
+        var result = await new UserManagementDataService(context).GetUsersAsync(null, TestContext.Current.CancellationToken);
 
-        // Assert
-        result.Should().Contain(s => s.Email == entity.Email)
-            .Which.Should().BeEquivalentTo(entity);
+        result.Should().Contain(user => user.Email == entity.Email)
+            .Which.Should().BeEquivalentTo(new
+            {
+                entity.Id,
+                entity.Forename,
+                entity.Surname,
+                entity.DateOfBirth,
+                entity.Email,
+                entity.IsActive
+            });
+    }
+
+    [Fact]
+    public async Task GetUsersAsync_WhenFilterIsActive_OnlyReturnsActiveUsers()
+    {
+        var context = CreateContext();
+        var dataService = new UserManagementDataService(context);
+
+        var result = await dataService.GetUsersAsync(true, TestContext.Current.CancellationToken);
+
+        result.Should().OnlyContain(user => user.IsActive);
+    }
+
+    [Fact]
+    public async Task GetUsersAsync_WhenContextsAreSeparate_DoesNotLeakData()
+    {
+        var alpha = CreateContext("alpha");
+        var beta = CreateContext("beta");
+
+        alpha.Users.Add(new User
+        {
+            Forename = "Alpha",
+            Surname = "User",
+            DateOfBirth = new DateOnly(1990, 5, 1),
+            Email = "alpha@example.com",
+            NormalizedEmail = "ALPHA@EXAMPLE.COM",
+            IsActive = true
+        });
+        await alpha.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var result = await new UserManagementDataService(beta).GetUsersAsync(null, TestContext.Current.CancellationToken);
+
+        result.Should().NotContain(user => user.Email == "alpha@example.com");
     }
 }
