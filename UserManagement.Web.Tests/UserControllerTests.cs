@@ -1,6 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Mvc;
 using UserManagement.Data.Models;
 using UserManagement.Services.Interfaces;
 using UserManagement.Web.Models;
@@ -60,6 +61,35 @@ public class UserControllerTests
         model.Items.Should().OnlyContain(x => x.IsActive == isActive);
     }
 
+    [Fact]
+    public async Task Details_WhenUserExists_ReturnsMappedModel()
+    {
+        var user = new UserDataModel(7, "John", "Smith", new DateOnly(1990, 1, 1), "john@example.com", true);
+        _userService
+            .Setup(s => s.GetUserByIdAsync(7, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(user);
+
+        var result = await _controller.Details(7, CancellationToken.None);
+
+        var view = result.Result.Should().BeOfType<ViewResult>().Subject;
+        var model = view.Model.Should().BeOfType<UserDetailsViewModel>().Subject;
+        model.Id.Should().Be(7);
+        model.Forename.Should().Be("John");
+        model.Email.Should().Be("john@example.com");
+        model.IsActive.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task Details_WhenUserDoesNotExist_ReturnsNotFound()
+    {
+        _userService
+            .Setup(s => s.GetUserByIdAsync(99, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((UserDataModel?)null);
+
+        var result = await _controller.Details(99, CancellationToken.None);
+
+        result.Result.Should().BeOfType<NotFoundResult>();
+    }
 
     private static IEnumerable<UserDataModel> CreateUsers(string forename = "Johnny", string surname = "User", string email = "juser@example.com", DateOnly? dateOfBirth = null, bool isActive = true)
     {

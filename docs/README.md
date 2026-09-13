@@ -39,12 +39,39 @@ The app still uses the EF Core InMemory provider as a temporary development stan
 
 ## Local verification
 
-Use the solution commands from the root:
+The application requires the .NET 10 SDK. Run these commands from the repository root.
+
+### Run the web application
+
+Start the web project with its development launch profile:
+
+```bash
+dotnet run --project UserManagement.Web/UserManagement.Web.csproj --launch-profile UserManagement.Web
+```
+
+Open <https://localhost:7084>, or go directly to the users page at <https://localhost:7084/users/List>. If the local HTTPS certificate is not trusted, use <http://localhost:5084/users/List> instead.
+
+For automatic rebuilds while editing:
+
+```bash
+dotnet watch --project UserManagement.Web/UserManagement.Web.csproj run
+```
+
+The Data and Services projects are class libraries and run through the web project; they are not started independently. The EF Core InMemory database resets when the application stops.
+
+### Run the tests
+
+Restore the solution and run all Data, Services and Web tests:
 
 ```bash
 dotnet restore UserManagement.slnx
-dotnet build UserManagement.slnx --configuration Release
-dotnet test UserManagement.slnx --configuration Release --no-build
+dotnet test UserManagement.slnx --configuration Release
 ```
 
-> Note: in this environment, `dotnet test` is blocked by the .NET 10 / Microsoft.Testing.Platform VSTest compatibility issue, even though the project build succeeds. The underlying code path still builds cleanly, and the suite is ready for the intended .NET 10 test runner configuration.
+The repository includes `global.json` to opt `dotnet test` into the Microsoft.Testing.Platform runner required by the .NET 10 SDK.
+
+To build without running tests:
+
+```bash
+dotnet build UserManagement.slnx --configuration Release --no-restore
+```

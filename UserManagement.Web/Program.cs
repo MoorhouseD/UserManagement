@@ -1,5 +1,7 @@
+using System;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
+using UserManagement.Data;
 using UserManagement.Data.Extensions;
 using UserManagement.Services.Extensions;
 using Westwind.AspNetCore.Markdown;
@@ -8,12 +10,19 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services
+    .AddSingleton(TimeProvider.System)
     .AddDataAccess()
     .AddDomainServices()
     .AddMarkdown()
     .AddControllersWithViews();
 
 var app = builder.Build();
+
+using (var scope = app.Services.CreateScope())
+{
+    var dataContext = scope.ServiceProvider.GetRequiredService<DataContext>();
+    dataContext.Database.EnsureCreated();
+}
 
 app.UseMarkdown();
 

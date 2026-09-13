@@ -1,0 +1,29 @@
+@model UserManagement.Web.Models.UserDetailsViewModel
+
+@{
+    ViewData["Title"] = "User Details";
+}
+
+<h2>User Details</h2>
+
+<dl class="row">
+    <dt class="col-sm-3">Id</dt>
+    <dd class="col-sm-9">@Model.Id</dd>
+
+    <dt class="col-sm-3">Forename</dt>
+    <dd class="col-sm-9">@Model.Forename</dd>
+
+    <dt class="col-sm-3">Surname</dt>
+    <dd class="col-sm-9">@Model.Surname</dd>
+
+    <dt class="col-sm-3">Date of birth</dt>
+    <dd class="col-sm-9">@Model.DateOfBirth.ToString("d")</dd>
+
+    <dt class="col-sm-3">Email</dt>
+    <dd class="col-sm-9">@Model.Email</dd>
+
+    <dt class="col-sm-3">Active</dt>
+    <dd class="col-sm-9">@(Model.IsActive ? "Yes" : "No")</dd>
+</dl>
+
+<a asp-action="List" class="btn btn-secondary">Back to list</a>
