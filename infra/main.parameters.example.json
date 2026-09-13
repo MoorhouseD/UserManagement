@@ -1,0 +1,33 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "location": {
+            "value": "uksouth"
+        },
+        "environmentName": {
+            "value": "dev"
+        },
+        "imageReference": {
+            "value": "REPLACE_WITH_ACR_LOGIN_SERVER/usermanagement:REPLACE_WITH_IMMUTABLE_TAG"
+        },
+        "databaseAdministratorLogin": {
+            "value": "usermanagementadmin"
+        },
+        "databaseAdministratorPassword": {
+            "value": "REPLACE_WITH_SECRET_AT_DEPLOYMENT_TIME"
+        },
+        "databaseConnectionString": {
+            "value": "REPLACE_WITH_SECURE_POSTGRES_CONNECTION_STRING"
+        },
+        "databaseSkuName": {
+            "value": "B_Standard_B1ms"
+        },
+        "minReplicas": {
+            "value": 1
+        },
+        "maxReplicas": {
+            "value": 2
+        }
+    }
+}

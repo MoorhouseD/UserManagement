@@ -5,7 +5,7 @@ We recommend that you use [Visual Studio (Community Edition)](https://visualstud
 
 **The application uses PostgreSQL for runtime persistence. A Docker Compose definition is included for local development.**
 
-See [the implementation notes](docs/README.md) for architecture, setup, migrations, testing and platform commands.
+See [the implementation notes](docs/README.md) for architecture, setup, migrations, testing and platform commands. Azure infrastructure guidance is in [infra/README.md](infra/README.md).
 
 ## The Exercise
 Complete as many of the tasks below as you feel comfortable with. These are split into 4 levels of difficulty 

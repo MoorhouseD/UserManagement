@@ -222,3 +222,7 @@ docker run --rm --name usermanagement-app \
 ```
 
 The CI workflow at `.github/workflows/ci.yml` restores, builds and tests the solution, uploads TRX test results, builds the image and smoke-tests `/health/live`. PostgreSQL integration tests use disposable Testcontainers instances on the hosted runner. The workflow does not publish an image or deploy infrastructure.
+
+## Azure infrastructure
+
+The Azure deployment definition is in [`infra/`](../infra/), with architecture, secure parameters, validation, deployment, verification, rollback and teardown guidance in [infra/README.md](../infra/README.md). It uses Azure Container Apps and PostgreSQL Flexible Server while keeping the application container stateless. Resource creation is intentionally manual and requires explicit approval.
