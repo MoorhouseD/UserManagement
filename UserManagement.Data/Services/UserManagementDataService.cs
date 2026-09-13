@@ -48,7 +48,13 @@ public class UserManagementDataService(DataContext dataContext) : IUserManagemen
                 user.IsActive))
             .SingleOrDefaultAsync(cancellationToken);
 
-    public async Task<bool> EmailExistsAsync(string email, CancellationToken cancellationToken = default)
+    public Task<bool> EmailExistsAsync(string email, CancellationToken cancellationToken = default)
+        => IsEmailInUseAsync(email, cancellationToken: cancellationToken);
+
+    public async Task<bool> EmailExistsAsync(string email, long? excludingUserId, CancellationToken cancellationToken = default)
+        => await IsEmailInUseAsync(email, excludingUserId, cancellationToken);
+
+    private async Task<bool> IsEmailInUseAsync(string email, long? excludingUserId = null, CancellationToken cancellationToken = default)
     {
         var normalized = email.Trim();
         if (string.IsNullOrWhiteSpace(normalized))
@@ -56,9 +62,16 @@ public class UserManagementDataService(DataContext dataContext) : IUserManagemen
             return false;
         }
 
-        return await _dataContext.Users
+        var users = _dataContext.Users
             .AsNoTracking()
-            .AnyAsync(user => user.NormalizedEmail == normalized.ToUpperInvariant(), cancellationToken);
+            .Where(user => user.NormalizedEmail == normalized.ToUpperInvariant());
+
+        if (excludingUserId.HasValue)
+        {
+            users = users.Where(user => user.Id != excludingUserId.Value);
+        }
+
+        return await users.AnyAsync(cancellationToken);
     }
 
     public async Task<long> CreateUserAsync(string forename, string surname, DateOnly dateOfBirth, string email, bool isActive, CancellationToken cancellationToken = default)
@@ -76,5 +89,37 @@ public class UserManagementDataService(DataContext dataContext) : IUserManagemen
         _dataContext.Users.Add(entity);
         await _dataContext.SaveChangesAsync(cancellationToken);
         return entity.Id;
+    }
+
+    public async Task<bool> UpdateUserAsync(long id, string forename, string surname, DateOnly dateOfBirth, string email, bool isActive, CancellationToken cancellationToken = default)
+    {
+        var entity = await _dataContext.Users.SingleOrDefaultAsync(user => user.Id == id, cancellationToken);
+        if (entity is null)
+        {
+            return false;
+        }
+
+        entity.Forename = forename.Trim();
+        entity.Surname = surname.Trim();
+        entity.DateOfBirth = dateOfBirth;
+        entity.Email = email.Trim();
+        entity.NormalizedEmail = email.Trim().ToUpperInvariant();
+        entity.IsActive = isActive;
+
+        await _dataContext.SaveChangesAsync(cancellationToken);
+        return true;
+    }
+
+    public async Task<bool> DeleteUserAsync(long id, CancellationToken cancellationToken = default)
+    {
+        var entity = await _dataContext.Users.SingleOrDefaultAsync(user => user.Id == id, cancellationToken);
+        if (entity is null)
+        {
+            return false;
+        }
+
+        _dataContext.Users.Remove(entity);
+        await _dataContext.SaveChangesAsync(cancellationToken);
+        return true;
     }
 }

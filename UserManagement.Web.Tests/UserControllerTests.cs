@@ -8,6 +8,8 @@ using UserManagement.Web.Models;
 using UserManagement.Web.Controllers;
 using System.Linq;
 using System.Collections.Generic;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc.ViewFeatures;
 
 namespace UserManagement.Web.Tests;
 
@@ -19,6 +21,7 @@ public class UserControllerTests
     public UserControllerTests()
     {
         _controller = new UsersController(_userService.Object);
+        _controller.TempData = new TempDataDictionary(new DefaultHttpContext(), Mock.Of<ITempDataProvider>());
     }
 
     [Fact]
@@ -89,6 +92,69 @@ public class UserControllerTests
         var result = await _controller.Details(99, CancellationToken.None);
 
         result.Result.Should().BeOfType<NotFoundResult>();
+    }
+
+    [Fact]
+    public async Task EditGet_WhenUserExists_ReturnsMappedModel()
+    {
+        var user = new UserDataModel(7, "John", "Smith", new DateOnly(1990, 1, 1), "john@example.com", true);
+        _userService
+            .Setup(s => s.GetUserByIdAsync(7, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(user);
+
+        var result = await _controller.Edit(7, CancellationToken.None);
+
+        var model = result.Should().BeOfType<ViewResult>().Subject.Model.Should().BeOfType<EditUserViewModel>().Subject;
+        model.Id.Should().Be(7);
+        model.Forename.Should().Be("John");
+        model.Email.Should().Be("john@example.com");
+    }
+
+    [Fact]
+    public async Task EditPost_WhenModelIsValid_UpdatesAndRedirects()
+    {
+        _userService
+            .Setup(s => s.IsEmailAvailableAsync("john@example.com", 7, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+
+        var model = new EditUserViewModel
+        {
+            Forename = "John",
+            Surname = "Smith",
+            DateOfBirth = new DateOnly(1990, 1, 1),
+            Email = "john@example.com",
+            IsActive = true
+        };
+
+        var result = await _controller.Edit(7, model, CancellationToken.None);
+
+        result.Should().BeOfType<RedirectToActionResult>().Which.ActionName.Should().Be(nameof(UsersController.List));
+        _userService.Verify(s => s.UpdateUserAsync(7, "John", "Smith", new DateOnly(1990, 1, 1), "john@example.com", true, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task Delete_WhenUserExists_DeletesAndRedirects()
+    {
+        _userService
+            .Setup(s => s.DeleteUserAsync(7, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+
+        var result = await _controller.Delete(7, CancellationToken.None);
+
+        result.Should().BeOfType<RedirectToActionResult>().Which.ActionName.Should().Be(nameof(UsersController.List));
+        _userService.Verify(s => s.DeleteUserAsync(7, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task Delete_WhenUserDoesNotExist_ReturnsNotFound()
+    {
+        _userService
+            .Setup(s => s.DeleteUserAsync(99, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
+
+        var result = await _controller.Delete(99, CancellationToken.None);
+
+        result.Should().BeOfType<NotFoundResult>();
     }
 
     private static IEnumerable<UserDataModel> CreateUsers(string forename = "Johnny", string surname = "User", string email = "juser@example.com", DateOnly? dateOfBirth = null, bool isActive = true)

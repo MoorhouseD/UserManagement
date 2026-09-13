@@ -22,6 +22,13 @@ The current model still follows the existing validation approach already present
 - The app uses a normalised email string for uniqueness checks and indexing.
 - The Data layer is the persistence boundary; it normalises values before saving wherever the model is directly mutated.
 
+## Edit and delete behaviour
+
+- Users can be edited from the list through a validated GET/POST MVC flow.
+- Updates use the same server-side validation as creation, including past-date-of-birth and unique-email checks. A user may keep their existing email address.
+- Successful edits and deletes use redirect-after-POST and expose a success message through `TempData`.
+- Deletion is POST-only and protected by antiforgery validation. The temporary InMemory database means deletions and edits reset when the application stops.
+
 ## Async and data-access behaviour
 
 This branch specifically addresses the asynchronous-query path:

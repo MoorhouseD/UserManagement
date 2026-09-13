@@ -118,4 +118,46 @@ public class DataContextTests
 
         result.Should().NotContain(user => user.Email == "alpha@example.com");
     }
+
+    [Fact]
+    public async Task UpdateUserAsync_WhenUserExists_UpdatesAllFields()
+    {
+        var context = CreateContext();
+        var entity = context.Users.First();
+        var dataService = new UserManagementDataService(context);
+
+        var updated = await dataService.UpdateUserAsync(
+            entity.Id,
+            "Updated",
+            "Person",
+            new DateOnly(1988, 4, 12),
+            "updated@example.com",
+            false,
+            TestContext.Current.CancellationToken);
+
+        updated.Should().BeTrue();
+        var result = await dataService.GetUserByIdAsync(entity.Id, TestContext.Current.CancellationToken);
+        result.Should().BeEquivalentTo(new
+        {
+            entity.Id,
+            Forename = "Updated",
+            Surname = "Person",
+            DateOfBirth = new DateOnly(1988, 4, 12),
+            Email = "updated@example.com",
+            IsActive = false
+        });
+    }
+
+    [Fact]
+    public async Task DeleteUserAsync_WhenUserExists_RemovesUser()
+    {
+        var context = CreateContext();
+        var entity = context.Users.First();
+        var dataService = new UserManagementDataService(context);
+
+        var deleted = await dataService.DeleteUserAsync(entity.Id, TestContext.Current.CancellationToken);
+
+        deleted.Should().BeTrue();
+        (await dataService.GetUserByIdAsync(entity.Id, TestContext.Current.CancellationToken)).Should().BeNull();
+    }
 }

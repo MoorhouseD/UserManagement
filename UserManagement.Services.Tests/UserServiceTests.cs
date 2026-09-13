@@ -52,6 +52,50 @@ public class UserServiceTests
         await action.Should().ThrowAsync<ArgumentException>();
     }
 
+    [Fact]
+    public async Task UpdateUserAsync_WhenKeepingOwnEmail_UpdatesUser()
+    {
+        var service = CreateUserService();
+        _dataContext
+            .Setup(s => s.EmailExistsAsync("john@example.com", 7, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
+        _dataContext
+            .Setup(s => s.UpdateUserAsync(7, "John", "Smith", new DateOnly(1990, 1, 1), "john@example.com", true, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+
+        await service.UpdateUserAsync(7, "John", "Smith", new DateOnly(1990, 1, 1), "john@example.com", true, TestContext.Current.CancellationToken);
+
+        _dataContext.Verify(s => s.UpdateUserAsync(7, "John", "Smith", new DateOnly(1990, 1, 1), "john@example.com", true, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task UpdateUserAsync_WhenEmailBelongsToAnotherUser_ThrowsArgumentException()
+    {
+        var service = CreateUserService();
+        _dataContext
+            .Setup(s => s.EmailExistsAsync("john@example.com", 7, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+
+        var action = async () => await service.UpdateUserAsync(7, "John", "Smith", new DateOnly(1990, 1, 1), "john@example.com", true, TestContext.Current.CancellationToken);
+
+        await action.Should().ThrowAsync<ArgumentException>();
+        _dataContext.Verify(s => s.UpdateUserAsync(It.IsAny<long>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DateOnly>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task DeleteUserAsync_DelegatesToDataService()
+    {
+        var service = CreateUserService();
+        _dataContext
+            .Setup(s => s.DeleteUserAsync(7, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+
+        var result = await service.DeleteUserAsync(7, TestContext.Current.CancellationToken);
+
+        result.Should().BeTrue();
+        _dataContext.Verify(s => s.DeleteUserAsync(7, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
     private IReadOnlyList<UserDataModel> SetupUsers(string forename = "Johnny", string surname = "User", string email = "juser@example.com", bool isActive = true)
     {
         var users = new[]

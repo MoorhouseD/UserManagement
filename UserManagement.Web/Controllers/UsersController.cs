@@ -74,6 +74,81 @@ public class UsersController(IUserService userService) : Controller
         }
     }
 
+    [HttpGet("edit/{id:long}")]
+    public async Task<IActionResult> Edit(long id, CancellationToken cancellationToken)
+    {
+        var user = await _userService.GetUserByIdAsync(id, cancellationToken);
+        if (user is null)
+        {
+            return NotFound();
+        }
+
+        return View(new EditUserViewModel
+        {
+            Id = user.Id,
+            Forename = user.Forename,
+            Surname = user.Surname,
+            DateOfBirth = user.DateOfBirth,
+            Email = user.Email,
+            IsActive = user.IsActive
+        });
+    }
+
+    [HttpPost("edit/{id:long}")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Edit(long id, EditUserViewModel model, CancellationToken cancellationToken)
+    {
+        model.Id = id;
+
+        if (!ModelState.IsValid)
+        {
+            return View(model);
+        }
+
+        if (!await _userService.IsEmailAvailableAsync(model.Email, id, cancellationToken))
+        {
+            ModelState.AddModelError(nameof(EditUserViewModel.Email), "A user with this email already exists.");
+            return View(model);
+        }
+
+        try
+        {
+            await _userService.UpdateUserAsync(
+                id,
+                model.Forename,
+                model.Surname,
+                model.DateOfBirth,
+                model.Email,
+                model.IsActive,
+                cancellationToken);
+
+            TempData["SuccessMessage"] = "User updated successfully.";
+            return RedirectToAction(nameof(List));
+        }
+        catch (ArgumentException ex)
+        {
+            ModelState.AddModelError(ex.ParamName ?? nameof(EditUserViewModel.Email), ex.Message);
+            return View(model);
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound();
+        }
+    }
+
+    [HttpPost("delete/{id:long}")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Delete(long id, CancellationToken cancellationToken)
+    {
+        if (!await _userService.DeleteUserAsync(id, cancellationToken))
+        {
+            return NotFound();
+        }
+
+        TempData["SuccessMessage"] = "User deleted successfully.";
+        return RedirectToAction(nameof(List));
+    }
+
     [HttpGet("{id:long}")]
     public async Task<ActionResult<UserDetailsViewModel>> Details(long id, CancellationToken cancellationToken)
     {

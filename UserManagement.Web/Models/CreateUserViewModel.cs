@@ -25,6 +25,30 @@ public class CreateUserViewModel
     public bool IsActive { get; set; } = true;
 }
 
+public class EditUserViewModel
+{
+    public long Id { get; set; }
+
+    [Required]
+    [StringLength(100)]
+    public string Forename { get; set; } = string.Empty;
+
+    [Required]
+    [StringLength(100)]
+    public string Surname { get; set; } = string.Empty;
+
+    [Required]
+    [DataType(DataType.Date)]
+    public DateOnly DateOfBirth { get; set; }
+
+    [Required]
+    [EmailAddress]
+    [StringLength(254)]
+    public string Email { get; set; } = string.Empty;
+
+    public bool IsActive { get; set; }
+}
+
 public record UserDetailsViewModel(
     long Id,
     string Forename,

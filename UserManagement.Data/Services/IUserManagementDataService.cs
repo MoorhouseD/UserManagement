@@ -11,5 +11,8 @@ public interface IUserManagementDataService
     Task<IReadOnlyList<UserDataModel>> GetUsersAsync(bool? isActive, CancellationToken cancellationToken = default);
     Task<UserDataModel?> GetUserByIdAsync(long id, CancellationToken cancellationToken = default);
     Task<bool> EmailExistsAsync(string email, CancellationToken cancellationToken = default);
+    Task<bool> EmailExistsAsync(string email, long? excludingUserId, CancellationToken cancellationToken = default);
     Task<long> CreateUserAsync(string forename, string surname, DateOnly dateOfBirth, string email, bool isActive, CancellationToken cancellationToken = default);
+    Task<bool> UpdateUserAsync(long id, string forename, string surname, DateOnly dateOfBirth, string email, bool isActive, CancellationToken cancellationToken = default);
+    Task<bool> DeleteUserAsync(long id, CancellationToken cancellationToken = default);
 }
