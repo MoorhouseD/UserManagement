@@ -13,6 +13,28 @@ Web -> Services -> Data service -> EF Core DbContext
 
 This keeps the web layer decoupled from persistence details while preserving the existing layered architecture.
 
+## Requirements
+
+Install or have available:
+
+- .NET 10 SDK `10.0.400` or a later feature-compatible SDK. The required SDK version is specified in `global.json`.
+- Docker Desktop, Docker Engine, or another Docker-compatible runtime with Docker Compose support. This provides the PostgreSQL container used by the application.
+- Git, if cloning or updating the repository from source control.
+
+PostgreSQL does not need to be installed separately when using the included `docker-compose.yml`. The compose file starts PostgreSQL 16 on port `5432` with the development database and credentials expected by `appsettings.json`.
+
+The .NET and EF Core package dependencies are restored by the project. The EF Core command-line tool is managed by the repository's local tool manifest; restore it with:
+
+```bash
+dotnet tool restore
+```
+
+On a new machine, trust the local ASP.NET Core HTTPS certificate if you want to use the HTTPS launch URL:
+
+```bash
+dotnet dev-certs https --trust
+```
+
 ## Validation and normalisation
 
 The current model still follows the existing validation approach already present in the project:
@@ -47,9 +69,83 @@ This branch specifically addresses the asynchronous-query path:
 
 This keeps the read path asynchronous end-to-end and avoids wrapping synchronous query execution in `Task.FromResult`.
 
-## Temporary in-memory configuration
+## PostgreSQL configuration and migrations
 
-The app still uses the EF Core InMemory provider as a temporary development stand-in while the PostgreSQL branch is not yet in place. This is intentional and is isolated in the Data layer registration so the rest of the application remains provider-agnostic.
+The web application uses PostgreSQL through the `ConnectionStrings:UserManagement` setting. The repository includes a local Docker Compose database with matching development credentials:
+
+```bash
+docker compose up -d postgres
+```
+
+The application applies committed EF Core migrations at startup. Stop the local database with:
+
+```bash
+docker compose down
+```
+
+The test projects continue to create isolated EF Core InMemory contexts directly, so they do not require PostgreSQL.
+
+### What migrations do
+
+EF Core migrations are versioned descriptions of database schema changes. They keep the PostgreSQL schema aligned with the entity model as tables, columns, indexes and seed data evolve. The committed initial migration creates the `Users` and `UserActionLogs` tables and the unique normalised-email index.
+
+The application calls `Database.Migrate()` during startup, so any committed migrations that have not yet been applied are run automatically after PostgreSQL is available. Migrations should be reviewed and committed with the model changes that require them.
+
+### Create and inspect migrations
+
+After changing the Data model, create a migration with a descriptive name:
+
+```bash
+dotnet tool restore
+dotnet tool run dotnet-ef migrations add AddUserPhoneNumber \
+	--project UserManagement.Data/UserManagement.Data.csproj \
+	--startup-project UserManagement.Web/UserManagement.Web.csproj \
+	--output-dir Migrations
+```
+
+List migrations and see which have been applied to the configured database:
+
+```bash
+dotnet tool run dotnet-ef migrations list \
+	--project UserManagement.Data/UserManagement.Data.csproj \
+	--startup-project UserManagement.Web/UserManagement.Web.csproj
+```
+
+Review the SQL that would be executed without changing the database:
+
+```bash
+dotnet tool run dotnet-ef migrations script \
+	--project UserManagement.Data/UserManagement.Data.csproj \
+	--startup-project UserManagement.Web/UserManagement.Web.csproj
+```
+
+### Apply and roll back migrations
+
+Apply all pending migrations explicitly, for example in a deployment or local setup:
+
+```bash
+dotnet tool run dotnet-ef database update \
+	--project UserManagement.Data/UserManagement.Data.csproj \
+	--startup-project UserManagement.Web/UserManagement.Web.csproj
+```
+
+To roll back a database that has already applied the latest migration, update it to the previous migration by name:
+
+```bash
+dotnet tool run dotnet-ef database update PreviousMigrationName \
+	--project UserManagement.Data/UserManagement.Data.csproj \
+	--startup-project UserManagement.Web/UserManagement.Web.csproj
+```
+
+If the latest migration has not been applied to any shared database, remove its files instead:
+
+```bash
+dotnet tool run dotnet-ef migrations remove \
+	--project UserManagement.Data/UserManagement.Data.csproj \
+	--startup-project UserManagement.Web/UserManagement.Web.csproj
+```
+
+Do not remove a migration that has already been applied to a shared database. Roll the database back first, coordinate the change with other environments, and review the generated SQL because rollback can be destructive or require data restoration.
 
 ## Local verification
 
@@ -71,7 +167,7 @@ For automatic rebuilds while editing:
 dotnet watch --project UserManagement.Web/UserManagement.Web.csproj run
 ```
 
-The Data and Services projects are class libraries and run through the web project; they are not started independently. The EF Core InMemory database resets when the application stops.
+The Data and Services projects are class libraries and run through the web project; they are not started independently. The PostgreSQL database persists data in the Docker volume until that volume is explicitly removed.
 
 ### Run the tests
 

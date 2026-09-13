@@ -3,7 +3,7 @@
 The exercise is an ASP.NET Core web application backed by Entity Framework Core, which faciliates management of some fictional users.
 We recommend that you use [Visual Studio (Community Edition)](https://visualstudio.microsoft.com/downloads) or [Visual Studio Code](https://code.visualstudio.com/Download) to run and modify the application. 
 
-**The application uses an in-memory database, so changes will not be persisted between executions.**
+**The application uses PostgreSQL for runtime persistence. A Docker Compose definition is included for local development.**
 
 ## The Exercise
 Complete as many of the tasks below as you feel comfortable with. These are split into 4 levels of difficulty 

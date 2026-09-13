@@ -1,5 +1,6 @@
 using System;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using UserManagement.Data;
 using UserManagement.Data.Extensions;
@@ -11,7 +12,7 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services
     .AddSingleton(TimeProvider.System)
-    .AddDataAccess()
+    .AddDataAccess(builder.Configuration)
     .AddDomainServices()
     .AddMarkdown()
     .AddControllersWithViews();
@@ -21,7 +22,7 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var dataContext = scope.ServiceProvider.GetRequiredService<DataContext>();
-    dataContext.Database.EnsureCreated();
+    dataContext.Database.Migrate();
 }
 
 app.UseMarkdown();
