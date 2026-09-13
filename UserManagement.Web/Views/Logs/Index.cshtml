@@ -1,0 +1,47 @@
+@model UserManagement.Web.Models.LogsListViewModel
+
+@{
+    ViewData["Title"] = "Logs";
+}
+
+<h2>Logs</h2>
+
+<div class="table-responsive">
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>When</th>
+                <th>User</th>
+                <th>Action</th>
+                <th>Details</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var log in Model.Items)
+            {
+                <tr>
+                    <td>@log.OccurredAtUtc.ToLocalTime().ToString("g")</td>
+                    <td>@log.UserName</td>
+                    <td>@log.Action</td>
+                    <td>@log.Details</td>
+                    <td><a asp-action="Details" asp-route-id="@log.Id" class="btn btn-sm btn-outline-primary">View</a></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@if (Model.TotalPages > 1)
+{
+    <nav aria-label="Log pages">
+        <ul class="pagination">
+            @for (var page = 1; page <= Model.TotalPages; page++)
+            {
+                <li class="page-item @(page == Model.Page ? "active" : "")">
+                    <a class="page-link" asp-action="Index" asp-route-page="@(page)">@(page)</a>
+                </li>
+            }
+        </ul>
+    </nav>
+}

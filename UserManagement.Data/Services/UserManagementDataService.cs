@@ -122,4 +122,57 @@ public class UserManagementDataService(DataContext dataContext) : IUserManagemen
         await _dataContext.SaveChangesAsync(cancellationToken);
         return true;
     }
+
+    public async Task<UserActionLogDataModel> CreateUserActionLogAsync(long userId, string userName, string action, string details, DateTimeOffset occurredAtUtc, CancellationToken cancellationToken = default)
+    {
+        var entity = new UserActionLog
+        {
+            UserId = userId,
+            UserName = userName.Trim(),
+            Action = action.Trim(),
+            Details = details.Trim(),
+            OccurredAtUtc = occurredAtUtc
+        };
+
+        _dataContext.UserActionLogs.Add(entity);
+        await _dataContext.SaveChangesAsync(cancellationToken);
+
+        return ToLogModel(entity);
+    }
+
+    public async Task<IReadOnlyList<UserActionLogDataModel>> GetUserActionLogsAsync(long userId, CancellationToken cancellationToken = default)
+        => await _dataContext.UserActionLogs
+            .AsNoTracking()
+            .Where(log => log.UserId == userId)
+            .OrderByDescending(log => log.OccurredAtUtc)
+            .ThenByDescending(log => log.Id)
+            .Select(log => new UserActionLogDataModel(log.Id, log.UserId, log.UserName, log.Action, log.Details, log.OccurredAtUtc))
+            .ToListAsync(cancellationToken);
+
+    public async Task<IReadOnlyList<UserActionLogDataModel>> GetUserActionLogsAsync(int page, int pageSize, CancellationToken cancellationToken = default)
+    {
+        var skip = Math.Max(0, page - 1) * pageSize;
+
+        return await _dataContext.UserActionLogs
+            .AsNoTracking()
+            .OrderByDescending(log => log.OccurredAtUtc)
+            .ThenByDescending(log => log.Id)
+            .Skip(skip)
+            .Take(pageSize)
+            .Select(log => new UserActionLogDataModel(log.Id, log.UserId, log.UserName, log.Action, log.Details, log.OccurredAtUtc))
+            .ToListAsync(cancellationToken);
+    }
+
+    public Task<int> GetUserActionLogCountAsync(CancellationToken cancellationToken = default)
+        => _dataContext.UserActionLogs.CountAsync(cancellationToken);
+
+    public async Task<UserActionLogDataModel?> GetUserActionLogByIdAsync(long id, CancellationToken cancellationToken = default)
+        => await _dataContext.UserActionLogs
+            .AsNoTracking()
+            .Where(log => log.Id == id)
+            .Select(log => new UserActionLogDataModel(log.Id, log.UserId, log.UserName, log.Action, log.Details, log.OccurredAtUtc))
+            .SingleOrDefaultAsync(cancellationToken);
+
+    private static UserActionLogDataModel ToLogModel(UserActionLog entity)
+        => new(entity.Id, entity.UserId, entity.UserName, entity.Action, entity.Details, entity.OccurredAtUtc);
 }

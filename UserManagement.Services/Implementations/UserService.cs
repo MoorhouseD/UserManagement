@@ -97,6 +97,39 @@ public class UserService(IUserManagementDataService dataAccess, TimeProvider tim
     public Task<bool> DeleteUserAsync(long id, CancellationToken cancellationToken = default)
         => _dataAccess.DeleteUserAsync(id, cancellationToken);
 
+    public async Task LogUserActionAsync(long userId, string userName, string action, string details, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(action))
+        {
+            throw new ArgumentException("Action is required.", nameof(action));
+        }
+
+        if (string.IsNullOrWhiteSpace(details))
+        {
+            throw new ArgumentException("Details are required.", nameof(details));
+        }
+
+        await _dataAccess.CreateUserActionLogAsync(
+            userId,
+            userName,
+            action,
+            details,
+            _timeProvider.GetUtcNow(),
+            cancellationToken);
+    }
+
+    public async Task<IEnumerable<UserActionLogDataModel>> GetUserActionLogsAsync(long userId, CancellationToken cancellationToken = default)
+        => await _dataAccess.GetUserActionLogsAsync(userId, cancellationToken);
+
+    public async Task<IReadOnlyList<UserActionLogDataModel>> GetUserActionLogsAsync(int page, int pageSize, CancellationToken cancellationToken = default)
+        => await _dataAccess.GetUserActionLogsAsync(page, pageSize, cancellationToken);
+
+    public Task<int> GetUserActionLogCountAsync(CancellationToken cancellationToken = default)
+        => _dataAccess.GetUserActionLogCountAsync(cancellationToken);
+
+    public Task<UserActionLogDataModel?> GetUserActionLogByIdAsync(long id, CancellationToken cancellationToken = default)
+        => _dataAccess.GetUserActionLogByIdAsync(id, cancellationToken);
+
     private void ValidateUser(string forename, string surname, DateOnly dateOfBirth, string email)
     {
         if (string.IsNullOrWhiteSpace(forename))

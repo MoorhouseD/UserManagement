@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 
 namespace UserManagement.Web.Models;
@@ -55,4 +56,7 @@ public record UserDetailsViewModel(
     string Surname,
     DateOnly DateOfBirth,
     string Email,
-    bool IsActive);
+    bool IsActive)
+{
+    public IReadOnlyList<UserActionLogViewModel> ActionLogs { get; init; } = [];
+}

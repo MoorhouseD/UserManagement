@@ -27,3 +27,34 @@
 </dl>
 
 <a asp-action="List" class="btn btn-secondary">Back to list</a>
+
+<h3 class="mt-4">Activity</h3>
+
+@if (Model.ActionLogs.Count == 0)
+{
+    <p class="text-muted">No actions have been recorded for this user.</p>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-sm">
+            <thead>
+                <tr>
+                    <th>Action</th>
+                    <th>Details</th>
+                    <th>Occurred</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var log in Model.ActionLogs)
+                {
+                    <tr>
+                        <td>@log.Action</td>
+                        <td>@log.Details</td>
+                        <td>@log.OccurredAtUtc.ToLocalTime().ToString("g")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

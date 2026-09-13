@@ -160,4 +160,25 @@ public class DataContextTests
         deleted.Should().BeTrue();
         (await dataService.GetUserByIdAsync(entity.Id, TestContext.Current.CancellationToken)).Should().BeNull();
     }
+
+    [Fact]
+    public async Task UserActionLogsAsync_WhenCreated_ReturnsNewestLogsAndSupportsPaging()
+    {
+        var context = CreateContext();
+        var dataService = new UserManagementDataService(context);
+        var firstTime = new DateTimeOffset(2026, 1, 1, 10, 0, 0, TimeSpan.Zero);
+        var secondTime = firstTime.AddMinutes(1);
+
+        await dataService.CreateUserActionLogAsync(1, "John Smith", "Created", "User account created.", firstTime, TestContext.Current.CancellationToken);
+        var created = await dataService.CreateUserActionLogAsync(1, "John Smith", "Viewed", "User details viewed.", secondTime, TestContext.Current.CancellationToken);
+
+        var userLogs = await dataService.GetUserActionLogsAsync(1, TestContext.Current.CancellationToken);
+        var page = await dataService.GetUserActionLogsAsync(2, 1, TestContext.Current.CancellationToken);
+        var details = await dataService.GetUserActionLogByIdAsync(created.Id, TestContext.Current.CancellationToken);
+
+        userLogs.Select(log => log.Action).Should().ContainInOrder("Viewed", "Created");
+        page.Should().ContainSingle().Which.Action.Should().Be("Created");
+        details.Should().BeEquivalentTo(created);
+        (await dataService.GetUserActionLogCountAsync(TestContext.Current.CancellationToken)).Should().Be(2);
+    }
 }

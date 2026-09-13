@@ -96,6 +96,23 @@ public class UserServiceTests
         _dataContext.Verify(s => s.DeleteUserAsync(7, It.IsAny<CancellationToken>()), Times.Once);
     }
 
+    [Fact]
+    public async Task LogUserActionAsync_UsesCurrentTimeAndPersistsAction()
+    {
+        var timestamp = new DateTimeOffset(2026, 1, 1, 10, 0, 0, TimeSpan.Zero);
+        var service = CreateUserService(timestamp);
+
+        await service.LogUserActionAsync(7, "John Smith", "Viewed", "User details viewed.", TestContext.Current.CancellationToken);
+
+        _dataContext.Verify(s => s.CreateUserActionLogAsync(
+            7,
+            "John Smith",
+            "Viewed",
+            "User details viewed.",
+            timestamp,
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
     private IReadOnlyList<UserDataModel> SetupUsers(string forename = "Johnny", string surname = "User", string email = "juser@example.com", bool isActive = true)
     {
         var users = new[]

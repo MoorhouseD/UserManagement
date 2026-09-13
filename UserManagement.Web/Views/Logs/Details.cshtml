@@ -1,0 +1,23 @@
+@model UserManagement.Web.Models.UserActionLogViewModel
+
+@{
+    ViewData["Title"] = "Log Details";
+}
+
+<h2>Log Details</h2>
+
+<dl class="row">
+    <dt class="col-sm-3">When</dt>
+    <dd class="col-sm-9">@Model.OccurredAtUtc.ToLocalTime().ToString("f")</dd>
+
+    <dt class="col-sm-3">User</dt>
+    <dd class="col-sm-9">@Model.UserName (Id @Model.UserId)</dd>
+
+    <dt class="col-sm-3">Action</dt>
+    <dd class="col-sm-9">@Model.Action</dd>
+
+    <dt class="col-sm-3">Details</dt>
+    <dd class="col-sm-9">@Model.Details</dd>
+</dl>
+
+<a asp-action="Index" class="btn btn-secondary">Back to logs</a>

@@ -4,14 +4,11 @@ using UserManagement.Data.Entities;
 
 namespace UserManagement.Data;
 
-public class DataContext : DbContext
+public class DataContext(DbContextOptions<DataContext> options) : DbContext(options)
 {
-    public DataContext(DbContextOptions<DataContext> options)
-        : base(options)
-    {
-    }
-
     public DbSet<User> Users => Set<User>();
+
+    public DbSet<UserActionLog> UserActionLogs => Set<UserActionLog>();
 
     protected override void OnModelCreating(ModelBuilder model)
     {

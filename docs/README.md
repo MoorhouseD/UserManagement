@@ -29,6 +29,13 @@ The current model still follows the existing validation approach already present
 - Successful edits and deletes use redirect-after-POST and expose a success message through `TempData`.
 - Deletion is POST-only and protected by antiforgery validation. The temporary InMemory database means deletions and edits reset when the application stops.
 
+## User action logging
+
+- Create, view, edit and delete actions are recorded with the user snapshot, action, details and UTC timestamp.
+- A user's Details page includes their action history.
+- The Logs page is available at `/logs`, supports page navigation, and links to individual log details at `/logs/{id}`.
+- Logs use the same temporary InMemory database and reset when the application stops.
+
 ## Async and data-access behaviour
 
 This branch specifically addresses the asynchronous-query path:

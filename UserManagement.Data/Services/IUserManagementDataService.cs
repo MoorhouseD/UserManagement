@@ -15,4 +15,9 @@ public interface IUserManagementDataService
     Task<long> CreateUserAsync(string forename, string surname, DateOnly dateOfBirth, string email, bool isActive, CancellationToken cancellationToken = default);
     Task<bool> UpdateUserAsync(long id, string forename, string surname, DateOnly dateOfBirth, string email, bool isActive, CancellationToken cancellationToken = default);
     Task<bool> DeleteUserAsync(long id, CancellationToken cancellationToken = default);
+    Task<UserActionLogDataModel> CreateUserActionLogAsync(long userId, string userName, string action, string details, DateTimeOffset occurredAtUtc, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<UserActionLogDataModel>> GetUserActionLogsAsync(long userId, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<UserActionLogDataModel>> GetUserActionLogsAsync(int page, int pageSize, CancellationToken cancellationToken = default);
+    Task<int> GetUserActionLogCountAsync(CancellationToken cancellationToken = default);
+    Task<UserActionLogDataModel?> GetUserActionLogByIdAsync(long id, CancellationToken cancellationToken = default);
 }

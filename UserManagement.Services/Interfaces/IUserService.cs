@@ -21,4 +21,9 @@ public interface IUserService
     Task<long> CreateUserAsync(string forename, string surname, DateOnly dateOfBirth, string email, bool isActive, CancellationToken cancellationToken = default);
     Task UpdateUserAsync(long id, string forename, string surname, DateOnly dateOfBirth, string email, bool isActive, CancellationToken cancellationToken = default);
     Task<bool> DeleteUserAsync(long id, CancellationToken cancellationToken = default);
+    Task LogUserActionAsync(long userId, string userName, string action, string details, CancellationToken cancellationToken = default);
+    Task<IEnumerable<UserActionLogDataModel>> GetUserActionLogsAsync(long userId, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<UserActionLogDataModel>> GetUserActionLogsAsync(int page, int pageSize, CancellationToken cancellationToken = default);
+    Task<int> GetUserActionLogCountAsync(CancellationToken cancellationToken = default);
+    Task<UserActionLogDataModel?> GetUserActionLogByIdAsync(long id, CancellationToken cancellationToken = default);
 }

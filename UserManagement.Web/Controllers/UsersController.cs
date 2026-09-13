@@ -56,12 +56,19 @@ public class UsersController(IUserService userService) : Controller
 
         try
         {
-            await _userService.CreateUserAsync(
+            var userId = await _userService.CreateUserAsync(
                 model.Forename,
                 model.Surname,
                 model.DateOfBirth,
                 model.Email,
                 model.IsActive,
+                cancellationToken);
+
+            await _userService.LogUserActionAsync(
+                userId,
+                $"{model.Forename.Trim()} {model.Surname.Trim()}",
+                "Created",
+                "User account created.",
                 cancellationToken);
 
             TempData["SuccessMessage"] = "User created successfully.";
@@ -122,6 +129,13 @@ public class UsersController(IUserService userService) : Controller
                 model.IsActive,
                 cancellationToken);
 
+            await _userService.LogUserActionAsync(
+                id,
+                $"{model.Forename.Trim()} {model.Surname.Trim()}",
+                "Updated",
+                "User account updated.",
+                cancellationToken);
+
             TempData["SuccessMessage"] = "User updated successfully.";
             return RedirectToAction(nameof(List));
         }
@@ -145,6 +159,13 @@ public class UsersController(IUserService userService) : Controller
             return NotFound();
         }
 
+        await _userService.LogUserActionAsync(
+            id,
+            $"User #{id}",
+            "Deleted",
+            "User account deleted.",
+            cancellationToken);
+
         TempData["SuccessMessage"] = "User deleted successfully.";
         return RedirectToAction(nameof(List));
     }
@@ -159,12 +180,26 @@ public class UsersController(IUserService userService) : Controller
             return NotFound();
         }
 
-        return View(new UserDetailsViewModel(
+        await _userService.LogUserActionAsync(
+            user.Id,
+            $"{user.Forename} {user.Surname}",
+            "Viewed",
+            "User details viewed.",
+            cancellationToken);
+
+        var model = new UserDetailsViewModel(
             Id: user.Id,
             Forename: user.Forename,
             Surname: user.Surname,
             DateOfBirth: user.DateOfBirth,
             Email: user.Email,
-            IsActive: user.IsActive));
+            IsActive: user.IsActive)
+        {
+            ActionLogs = (await _userService.GetUserActionLogsAsync(id, cancellationToken))
+                .Select(UserActionLogViewModel.FromData)
+                .ToList()
+        };
+
+        return View(model);
     }
 }
