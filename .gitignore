@@ -146,6 +146,9 @@ publish/
 #*.pubxml
 *.publishproj
 
+# Local Azure deployment parameters
+infra/main.parameters.local.json
+
 # NuGet Packages
 *.nupkg
 # The packages folder can be ignored because of Package Restore
