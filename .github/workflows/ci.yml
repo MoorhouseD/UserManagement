@@ -1,0 +1,89 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_VERSION: 10.0.x
+  COMPOSE_PROJECT_NAME: usermanagement-ci
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj', 'global.json') }}
+          restore-keys: ${{ runner.os }}-nuget-
+
+      - name: Restore dependencies
+        run: dotnet restore UserManagement.slnx
+
+      - name: Build Release
+        run: dotnet build UserManagement.slnx --configuration Release --no-restore
+
+      - name: Start PostgreSQL
+        run: docker compose up -d --wait postgres
+
+      - name: Run tests
+        run: >-
+          dotnet test UserManagement.slnx
+          --configuration Release
+          --no-build
+          --results-directory TestResults
+          --report-xunit-trx
+          --report-xunit-trx-filename test-results.trx
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: TestResults
+          if-no-files-found: warn
+
+      - name: Build application image
+        run: docker build --tag usermanagement:${{ github.sha }} .
+
+      - name: Start application container
+        run: >-
+          docker run --detach
+          --name usermanagement-app
+          --network ${COMPOSE_PROJECT_NAME}_default
+          --publish 8080:8080
+          --env ASPNETCORE_ENVIRONMENT=Development
+          --env ConnectionStrings__UserManagement='Host=postgres;Port=5432;Database=usermanagement;Username=postgres;Password=postgres'
+          usermanagement:${{ github.sha }}
+
+      - name: Smoke test liveness endpoint
+        run: |
+          for attempt in {1..30}; do
+            if curl --fail --silent http://localhost:8080/health/live; then
+              exit 0
+            fi
+            sleep 2
+          done
+          docker logs usermanagement-app
+          exit 1
+
+      - name: Stop local services
+        if: always()
+        run: |
+          docker rm --force usermanagement-app 2>/dev/null || true
+          docker compose down --volumes

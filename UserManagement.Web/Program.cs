@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using UserManagement.Data;
 using UserManagement.Data.Extensions;
+using UserManagement.Web.Health;
 using UserManagement.Services.Extensions;
 using Westwind.AspNetCore.Markdown;
 
@@ -16,6 +17,10 @@ builder.Services
     .AddDomainServices()
     .AddMarkdown()
     .AddControllersWithViews();
+
+builder.Services
+    .AddHealthChecks()
+    .AddCheck<DatabaseHealthCheck>("database", tags: ["ready"]);
 
 var app = builder.Build();
 
@@ -34,6 +39,14 @@ app.UseStaticFiles();
 app.UseRouting();
 app.UseAuthorization();
 
+app.MapHealthChecks("/health/live", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
+{
+    Predicate = _ => false
+});
+app.MapHealthChecks("/health/ready", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
+{
+    Predicate = check => check.Tags.Contains("ready")
+});
 app.MapDefaultControllerRoute();
 
 app.Run();

@@ -193,3 +193,32 @@ To build without running tests:
 ```bash
 dotnet build UserManagement.slnx --configuration Release --no-restore
 ```
+
+## Container and health checks
+
+Build the application image from the repository root:
+
+```bash
+docker build --tag usermanagement:local .
+```
+
+The image uses separate .NET SDK and ASP.NET runtime stages, publishes only the Web project output and runs as the non-root runtime user. PostgreSQL configuration is supplied at runtime; no credentials are copied into the image.
+
+The application exposes two probe endpoints:
+
+- `/health/live` reports process liveness and does not depend on PostgreSQL.
+- `/health/ready` checks PostgreSQL connectivity and returns failure when the database is unavailable.
+
+For a local container smoke test, start PostgreSQL and run the image on the Compose network:
+
+```bash
+docker compose up -d postgres
+docker build --tag usermanagement:local .
+docker run --rm --name usermanagement-app \
+	--network techtest_default \
+	--publish 8080:8080 \
+	--env ConnectionStrings__UserManagement='Host=postgres;Port=5432;Database=usermanagement;Username=postgres;Password=postgres' \
+	usermanagement:local
+```
+
+The CI workflow at `.github/workflows/ci.yml` restores, builds and tests the solution, uploads TRX test results, builds the image and smoke-tests `/health/live`. PostgreSQL integration tests use disposable Testcontainers instances on the hosted runner. The workflow does not publish an image or deploy infrastructure.

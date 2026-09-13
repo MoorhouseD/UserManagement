@@ -47,6 +47,22 @@ public sealed class UserJourneysTests(PostgreSqlWebApplicationFactory factory)
     }
 
     [Fact]
+    public async Task HealthEndpoints_ReportLivenessAndDatabaseReadiness()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        using var client = factory.CreateClient(new WebApplicationFactoryClientOptions
+        {
+            AllowAutoRedirect = false
+        });
+
+        using var livenessResponse = await client.GetAsync("/health/live", cancellationToken);
+        using var readinessResponse = await client.GetAsync("/health/ready", cancellationToken);
+
+        livenessResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        readinessResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
+    [Fact]
     public async Task Details_WhenUserExists_CreatesViewedAuditEvent()
     {
         using var client = factory.CreateClient(new WebApplicationFactoryClientOptions
