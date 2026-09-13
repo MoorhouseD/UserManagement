@@ -83,7 +83,7 @@ The application applies committed EF Core migrations at startup. Stop the local 
 docker compose down
 ```
 
-The test projects continue to create isolated EF Core InMemory contexts directly, so they do not require PostgreSQL.
+The unit test projects continue to create isolated EF Core InMemory contexts directly. The `UserManagement.Integration.Tests` project uses Testcontainers to start a disposable PostgreSQL 16 container, applies the committed migrations through the real web startup path and exercises selected HTTP journeys. Docker must be running for those tests.
 
 ### What migrations do
 
@@ -177,6 +177,14 @@ Restore the solution and run all Data, Services and Web tests:
 dotnet restore UserManagement.slnx
 dotnet test UserManagement.slnx --configuration Release
 ```
+
+Run only the PostgreSQL integration tests when iterating on relational or HTTP behaviour:
+
+```bash
+dotnet test UserManagement.Integration.Tests/UserManagement.Integration.Tests.csproj --configuration Release
+```
+
+The integration fixture removes its PostgreSQL container after the test run. Fast unit and MVC-controller tests use InMemory and cover service decisions without requiring Docker; integration tests cover migration application, relational persistence and the key HTTP boundary.
 
 The repository includes `global.json` to opt `dotnet test` into the Microsoft.Testing.Platform runner required by the .NET 10 SDK.
 
